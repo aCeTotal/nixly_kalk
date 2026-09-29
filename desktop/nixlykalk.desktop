@@ -1,0 +1,17 @@
+[Desktop Entry]
+Type=Application
+Name=Calculator
+Name[nb]=Kalkulator
+Name[nn]=Kalkulator
+GenericName=Calculator
+GenericName[nb]=Kalkulator
+GenericName[nn]=Kalkulator
+Comment=Fast, modern calculator
+Comment[nb]=Rask og moderne kalkulator
+Comment[nn]=Rask og moderne kalkulator
+Icon=nixlykalk
+Exec=nixlykalk
+Terminal=false
+Categories=Utility;Calculator;Qt;
+Keywords=calculator;math;kalkulator;matte;
+StartupNotify=true

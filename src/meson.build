@@ -1,0 +1,30 @@
+src_inc = include_directories('.')
+
+engine = static_library('engine',
+  'math/evaluate.cpp',
+  'math/function.cpp',
+  'math/number.cpp',
+  'entry/entry.cpp',
+  'entry/sanitize.cpp',
+  'entry/tail.cpp',
+  'text/notation.cpp',
+  'text/phrase.cpp',
+  'text/pretty.cpp',
+  include_directories: src_inc,
+  dependencies: qt_core,
+)
+
+executable('nixlykalk',
+  'main.cpp',
+  'keypad/key.cpp',
+  'keypad/keypad.cpp',
+  'keypad/layout.cpp',
+  'window/readout.cpp',
+  'window/keyboard.cpp',
+  'window/modebar.cpp',
+  'window/window.cpp',
+  include_directories: src_inc,
+  link_with: engine,
+  dependencies: qt_widgets,
+  install: true,
+)
