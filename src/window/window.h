@@ -2,6 +2,7 @@
 
 #include "entry/entry.h"
 #include "keypad/layout.h"
+#include "window/vim.h"
 
 #include <QWidget>
 
@@ -26,8 +27,11 @@ private:
     void paste();
     void save() const;
     Keypad *keypadFor(Mode mode) const;
+    VimCommand commandFor(const QKeyEvent &event, const Keypad &keypad);
+    void run(VimCommand command, Keypad *keypad);
 
     Entry entry_;
+    VimKeys vim_;
     Mode mode_ = Mode::Standard;
     ModeBar *modeBar_ = nullptr;
     Readout *readout_ = nullptr;

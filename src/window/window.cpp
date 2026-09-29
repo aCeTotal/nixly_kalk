@@ -25,6 +25,8 @@ constexpr int kHeight = 520;
 constexpr int kMargin = 14;
 constexpr int kSpacing = 10;
 constexpr int kFadeMs = 160;
+constexpr int kFar = 1000;
+constexpr QStringView kVimEntry = u"hjk";
 constexpr qreal kGlowX = 0.85;
 constexpr qreal kGlowY = 40;
 constexpr qreal kGlowRadius = 260;
@@ -55,22 +57,17 @@ std::optional<Mode> modeFor(const QKeyEvent &event)
     }
 }
 
-struct Step {
-    int rows;
-    int columns;
-};
-
-std::optional<Step> stepFor(int key)
+std::optional<VimCommand> arrowFor(int key)
 {
     switch (key) {
     case Qt::Key_Up:
-        return Step{-1, 0};
+        return VimCommand::Up;
     case Qt::Key_Down:
-        return Step{1, 0};
+        return VimCommand::Down;
     case Qt::Key_Left:
-        return Step{0, -1};
+        return VimCommand::Left;
     case Qt::Key_Right:
-        return Step{0, 1};
+        return VimCommand::Right;
     default:
         return std::nullopt;
     }
@@ -142,12 +139,11 @@ void Window::keyPressEvent(QKeyEvent *event)
         return;
     }
     Keypad *keypad = keypadFor(mode_);
-    if (const std::optional<Step> step = stepFor(event->key())) {
-        keypad->step(step->rows, step->columns);
+    const VimCommand command = commandFor(*event, *keypad);
+    if (command != VimCommand::Unbound) {
+        run(command, keypad);
         return;
     }
-    if (isEnter(event->key()) && keypad->activate())
-        return;
     const std::optional<Keystroke> stroke = keystrokeFor(*event);
     if (!stroke) {
         QWidget::keyPressEvent(event);
@@ -180,6 +176,55 @@ void Window::press(Keystroke stroke)
     standard_->setAngle(entry_.angle());
     scientific_->setAngle(entry_.angle());
     save();
+}
+
+VimCommand Window::commandFor(const QKeyEvent &event, const Keypad &keypad)
+{
+    if (const std::optional<VimCommand> arrow = arrowFor(event.key()))
+        return *arrow;
+    const bool navigating = keypad.navigating();
+    if (navigating && event.key() == Qt::Key_Escape)
+        return VimCommand::Leave;
+    if (navigating && isEnter(event.key()))
+        return VimCommand::Press;
+    const QString text = event.text();
+    if (text.isEmpty() || (!navigating && !kVimEntry.contains(text.front())))
+        return VimCommand::Unbound;
+    return vim_.feed(text.front());
+}
+
+void Window::run(VimCommand command, Keypad *keypad)
+{
+    switch (command) {
+    case VimCommand::Left:
+        return keypad->step(0, -1);
+    case VimCommand::Down:
+        return keypad->step(1, 0);
+    case VimCommand::Up:
+        return keypad->step(-1, 0);
+    case VimCommand::Right:
+        return keypad->step(0, 1);
+    case VimCommand::First:
+        return keypad->step(-kFar, -kFar);
+    case VimCommand::Last:
+        return keypad->step(kFar, kFar);
+    case VimCommand::Press:
+        keypad->activate();
+        return;
+    case VimCommand::Backspace:
+        return press({Command::Backspace, {}});
+    case VimCommand::Clear:
+        return press({Command::Clear, {}});
+    case VimCommand::Copy:
+        return copy();
+    case VimCommand::Paste:
+        return paste();
+    case VimCommand::Leave:
+        return keypad->hideCursor();
+    case VimCommand::Unbound:
+    case VimCommand::Pending:
+        return;
+    }
 }
 
 void Window::setMode(Mode mode)

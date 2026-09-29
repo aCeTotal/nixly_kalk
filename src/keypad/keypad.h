@@ -19,6 +19,7 @@ public:
     void step(int rows, int columns);
     bool activate();
     void hideCursor();
+    bool navigating() const { return cursor_ >= 0; }
 
 private:
     void press(Key *key);
