@@ -20,8 +20,8 @@
 
 namespace {
 
-constexpr int kWidth = 336;
-constexpr int kHeight = 552;
+constexpr int kWidth = 320;
+constexpr int kHeight = 520;
 constexpr int kMargin = 14;
 constexpr int kSpacing = 10;
 constexpr int kFadeMs = 160;
@@ -55,6 +55,32 @@ std::optional<Mode> modeFor(const QKeyEvent &event)
     }
 }
 
+struct Step {
+    int rows;
+    int columns;
+};
+
+std::optional<Step> stepFor(int key)
+{
+    switch (key) {
+    case Qt::Key_Up:
+        return Step{-1, 0};
+    case Qt::Key_Down:
+        return Step{1, 0};
+    case Qt::Key_Left:
+        return Step{0, -1};
+    case Qt::Key_Right:
+        return Step{0, 1};
+    default:
+        return std::nullopt;
+    }
+}
+
+bool isEnter(int key)
+{
+    return key == Qt::Key_Return || key == Qt::Key_Enter;
+}
+
 void fadeIn(QWidget *widget)
 {
     auto *effect = new QGraphicsOpacityEffect(widget);
@@ -82,7 +108,7 @@ Window::Window(QWidget *parent)
 
     const auto onPress = [this](Keystroke stroke) { press(stroke); };
     modeBar_ = new ModeBar(mode_, [this](Mode mode) { setMode(mode); }, this);
-    readout_ = new Readout(this);
+    readout_ = new Readout([this] { copy(); }, [this] { press({Command::Clear, {}}); }, this);
     keypads_ = new QStackedWidget(this);
     standard_ = new Keypad(Mode::Standard, onPress, keypads_);
     scientific_ = new Keypad(Mode::Scientific, onPress, keypads_);
@@ -115,12 +141,20 @@ void Window::keyPressEvent(QKeyEvent *event)
         setMode(*mode);
         return;
     }
+    Keypad *keypad = keypadFor(mode_);
+    if (const std::optional<Step> step = stepFor(event->key())) {
+        keypad->step(step->rows, step->columns);
+        return;
+    }
+    if (isEnter(event->key()) && keypad->activate())
+        return;
     const std::optional<Keystroke> stroke = keystrokeFor(*event);
     if (!stroke) {
         QWidget::keyPressEvent(event);
         return;
     }
-    keypadFor(mode_)->flash(*stroke);
+    keypad->hideCursor();
+    keypad->flash(*stroke);
     press(*stroke);
 }
 
@@ -152,6 +186,7 @@ void Window::setMode(Mode mode)
 {
     if (mode == mode_)
         return;
+    keypadFor(mode_)->hideCursor();
     mode_ = mode;
     Keypad *incoming = keypadFor(mode);
     keypads_->setCurrentWidget(incoming);

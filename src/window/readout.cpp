@@ -6,6 +6,8 @@
 #include "text/pretty.h"
 
 #include <QFontMetricsF>
+#include <QMenu>
+#include <QMouseEvent>
 #include <QPainter>
 #include <algorithm>
 #include <cmath>
@@ -13,17 +15,18 @@
 
 namespace {
 
-constexpr int kHeight = 128;
+constexpr int kHeight = 112;
 constexpr qreal kPadding = 4;
-constexpr qreal kTopY = 12;
+constexpr qreal kTopY = 8;
 constexpr qreal kTopHeight = 28;
-constexpr qreal kMainY = 44;
-constexpr qreal kMainHeight = 76;
+constexpr qreal kMainY = 38;
+constexpr qreal kMainHeight = 70;
 constexpr int kTopPixels = 17;
-constexpr int kMainPixels = 46;
+constexpr int kMainPixels = 42;
 constexpr int kFailurePixels = 28;
 constexpr int kMinPixels = 22;
 constexpr int kPreviewAlpha = 217;
+constexpr int kMenuAlpha = 250;
 constexpr int kRiseMs = 220;
 constexpr int kShakeMs = 320;
 constexpr qreal kRiseDistance = 14;
@@ -53,14 +56,36 @@ qreal progressOf(const QVariantAnimation *animation)
     return animation->currentValue().toReal();
 }
 
+QString css(const QColor &color)
+{
+    return QStringLiteral("rgba(%1, %2, %3, %4)")
+        .arg(color.red())
+        .arg(color.green())
+        .arg(color.blue())
+        .arg(color.alpha());
+}
+
+QString menuStyle()
+{
+    return QStringLiteral("QMenu { background: %1; color: %2; border: 1px solid %3; border-radius: 10px;"
+                          " padding: 5px; font-size: 13px; }"
+                          "QMenu::item { padding: 7px 26px 7px 14px; border-radius: 6px; }"
+                          "QMenu::item:selected { background: %4; }")
+        .arg(css(palette::withAlpha(palette::background, kMenuAlpha)), css(palette::text),
+             css(palette::hairline), css(palette::operatorKey));
+}
+
 } // namespace
 
-Readout::Readout(QWidget *parent)
+Readout::Readout(std::function<void()> onCopy, std::function<void()> onClear, QWidget *parent)
     : QWidget(parent)
+    , onCopy_(std::move(onCopy))
+    , onClear_(std::move(onClear))
     , rise_(unitAnimation(this, kRiseMs, QEasingCurve::OutCubic))
     , shake_(unitAnimation(this, kShakeMs, QEasingCurve::Linear))
 {
     setFixedHeight(kHeight);
+    setCursor(Qt::PointingHandCursor);
     topFont_.setPixelSize(kTopPixels);
     mainFont_.setWeight(QFont::Light);
     mainFont_.setFeature(QFont::Tag("tnum"), 1);
@@ -113,6 +138,38 @@ void Readout::resizeEvent(QResizeEvent *event)
 {
     fit();
     QWidget::resizeEvent(event);
+}
+
+void Readout::mousePressEvent(QMouseEvent *event)
+{
+    switch (event->button()) {
+    case Qt::LeftButton:
+        copy();
+        break;
+    case Qt::RightButton:
+        openMenu(event->globalPosition().toPoint());
+        break;
+    default:
+        QWidget::mousePressEvent(event);
+    }
+}
+
+void Readout::copy()
+{
+    onCopy_();
+    rise_->stop();
+    rise_->start();
+}
+
+void Readout::openMenu(QPoint position)
+{
+    QMenu menu(this);
+    menu.setWindowFlags(menu.windowFlags() | Qt::FramelessWindowHint | Qt::NoDropShadowWindowHint);
+    menu.setAttribute(Qt::WA_TranslucentBackground);
+    menu.setStyleSheet(menuStyle());
+    menu.addAction(phrase(Phrase::CopySum).toString(), this, [this] { copy(); });
+    menu.addAction(phrase(Phrase::Clear).toString(), this, onClear_);
+    menu.exec(position);
 }
 
 void Readout::showEditing(const Entry &entry)

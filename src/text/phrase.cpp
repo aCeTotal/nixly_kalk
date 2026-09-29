@@ -10,18 +10,18 @@ namespace {
 
 enum class Language { English, Bokmal, Nynorsk };
 
-constexpr std::size_t kPhraseCount = 7;
+constexpr std::size_t kPhraseCount = 9;
 constexpr std::size_t kLanguageCount = 3;
 
 using Phrases = std::array<QStringView, kPhraseCount>;
 
 constexpr std::array<Phrases, kLanguageCount> kPhrases{{
     {u"Calculator", u"Standard", u"Scientific", u"Invalid expression", u"Cannot divide by zero",
-     u"Invalid input", u"Overflow"},
+     u"Invalid input", u"Overflow", u"Copy sum", u"Clear"},
     {u"Kalkulator", u"Standard", u"Vitenskapelig", u"Ugyldig uttrykk", u"Kan ikke dele på null",
-     u"Ugyldig inndata", u"Overflyt"},
+     u"Ugyldig inndata", u"Overflyt", u"Kopier sum", u"Tøm"},
     {u"Kalkulator", u"Standard", u"Vitskapleg", u"Ugyldig uttrykk", u"Kan ikkje dele på null",
-     u"Ugyldig inndata", u"Overflyt"},
+     u"Ugyldig inndata", u"Overflyt", u"Kopier sum", u"Tøm"},
 }};
 
 struct Prefix {

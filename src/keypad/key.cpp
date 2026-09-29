@@ -25,6 +25,7 @@ constexpr int kHighlightAlpha = 14;
 constexpr int kRippleAlpha = 60;
 constexpr int kGlowAlpha = 46;
 constexpr int kFunctionTextAlpha = 217;
+constexpr qreal kRingWidth = 2;
 
 QColor fillOf(Kind kind)
 {
@@ -120,6 +121,12 @@ void Key::flash()
     startRipple(rect().center());
 }
 
+void Key::setSelected(bool selected)
+{
+    selected_ = selected;
+    update();
+}
+
 void Key::paintEvent(QPaintEvent *)
 {
     QPainter painter(this);
@@ -134,6 +141,7 @@ void Key::paintEvent(QPaintEvent *)
     const qreal radius = std::min(kMaxRadius, face.height() / kRadiusDivisor);
     paintFace(painter, face, radius);
     paintRipple(painter, face, radius);
+    paintSelection(painter, face, radius);
     painter.setFont(font_);
     painter.setPen(inkOf(spec_.kind));
     painter.drawText(face, Qt::AlignCenter, alternate_ ? altLabel_ : label_);
@@ -184,6 +192,16 @@ void Key::paintFace(QPainter &painter, const QRectF &face, qreal radius) const
     painter.setPen(palette::accent);
     painter.setBrush(Qt::NoBrush);
     painter.drawRoundedRect(face.adjusted(0.5, 0.5, -0.5, -0.5), radius, radius);
+}
+
+void Key::paintSelection(QPainter &painter, const QRectF &face, qreal radius) const
+{
+    if (!selected_)
+        return;
+    const qreal outset = kRingWidth / 2;
+    painter.setPen(QPen(palette::accent, kRingWidth));
+    painter.setBrush(Qt::NoBrush);
+    painter.drawRoundedRect(face.adjusted(-outset, -outset, outset, outset), radius + outset, radius + outset);
 }
 
 void Key::paintRipple(QPainter &painter, const QRectF &face, qreal radius) const

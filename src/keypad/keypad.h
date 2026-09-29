@@ -16,11 +16,18 @@ public:
 
     void flash(Keystroke stroke);
     void setAngle(Angle angle);
+    void step(int rows, int columns);
+    bool activate();
+    void hideCursor();
 
 private:
     void press(Key *key);
     Key *find(Command command) const;
+    void select(int index);
 
     std::vector<Key *> keys_;
     std::function<void(Keystroke)> onPress_;
+    int columns_;
+    int home_ = 0;
+    int cursor_ = -1;
 };
